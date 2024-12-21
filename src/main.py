@@ -16,8 +16,12 @@ class Program:
 
   def __init__(this: Self) -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description="Program to run with a specified key.")
-    parser.add_argument('--key', type=str, default='f15', help='Key to use (e.g., f12, f15)')
-    parser.add_argument('--interval', type=int, default=300, help='Time between keystrokes in seconds (default: 300)')
+    parser.add_argument('--key', type=str, default='f15',
+                        help='Key to press (EX: f12, f15, a, b, c, etc.) (default: f15)')
+    parser.add_argument('--interval', type=int, default=300,
+                        help='Time between each keystroke in seconds (default: 300)')
+    parser.add_argument('--paused', type=bool, default=False,
+                        help='Will start the program paused if True (default: False)')
     args: argparse.Namespace = parser.parse_args()
     if args.key.lower() not in Keyboard.vk_codes:
       ctypes.windll.user32.MessageBoxW(0, "Invalid key specified.", "Error", 0x10)
@@ -27,14 +31,19 @@ class Program:
       sys.exit(0)
 
     this.loop: bool = True
-    this.paused: bool = False
+    this.paused: bool = args.paused
     this.rest_time: int = args.interval
     this.key: int = Keyboard.vk_codes[args.key.lower()]
     this.stop_event: threading.Event = threading.Event()
     this.cancel_token: threading.Event = threading.Event()
     # Prevent multiple instances of the program
     this.prevent_multiple_instance()
-    ctypes.windll.user32.MessageBoxW(0, "Keyboard Cat is now running in your system tray.", "Meow :3", 0x40)
+    message_thread: threading.Thread = threading.Thread(
+      target=lambda: ctypes.windll.user32.MessageBoxW(0,
+                                                      "Keyboard Cat is now running in your system tray, right click it to learn more.",
+                                                      "Meow :3",
+                                                      0x40))
+    message_thread.start()
 
   def prevent_multiple_instance(this: Self) -> None:
     # Create a mutex and check if it already exists
